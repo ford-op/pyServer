@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+dirout="/RECORDINGS_FOLDER/"
+dirin="/data/media/0/realdata"
+
+today=$(date '+%Y-%m-%d')
+remotefilelist=$(ssh comma@comma "find ${dirin} -name \"*rlog\" -printf \"%T@ %Tc ;;%p\n\" | sort -rn | sed 's/.*;;//'")
+
+if [ $? -eq 0 ]; then
+	mkdir -p "$dirout"
+else
+	echo "$1 ($2): $remotefilelist"
+break
+fi
+
+prevSRout=""
+for f in $remotefilelist; do
+      fstr="${f#$dirin/}" # strip off the input directory
+      segment="${fstr%%/rlog}"
+      sRoute=$(sed -E 's/^(.*)--(.*)--.*/\1--\2/' <<< "${segment}")
+      if [ "${sRoute}" != "${prevSRoute}" ]; then
+     	echo -e "\n\n\nProcessing ${sRoute}"
+     	if [ ! -d "${dirout}/${sRoute}" ]; then
+	    mkdir -p "${dirout}/${sRoute}"
+	fi
+	rsync -rltv --progress --ignore-existing comma@comma:/data/media/0/realdata/${sRoute}* ${dirout}/${sRoute}/
+      	prevSRoute=$sRoute
+      fi
+      # echo "${f} ${fstr} ${route} ++${route2}++"      
+done
+
+# rsync -rltv --progress --ignore-existing comma@comma:/data/media/0/realdata/ /home/rwxr-xr-x/data/recordings/
+
+echo -e "\n\n\nProcessing videos"
+rsync -rltv --progress --ignore-existing comma@comma:/data/media/0/videos/ /home/rwxr-xr-x/data/recordings/videos/
