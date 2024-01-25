@@ -56,7 +56,7 @@ Folder structure for the `recordings` folder.
   2023-12-30--16-19-38--2
   2023-12-30--16-19-38--3
 ```
-# `sincop` tool
+# `syncop` tool
 Tool to copy the missing routed from your comma device to your `recordings` folder. Update syncop and replace `RECORDINGS_FOLDER` with the path where `recordigns` should be stored.
 
 # Important Notes:
