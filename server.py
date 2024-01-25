@@ -17,25 +17,33 @@ QLOGS = ["qlog"]
 QCAMERAS = ["qcamera.ts"]
 
 class Handler(BaseHTTPRequestHandler):
+  def do_HEAD(self):
+    self.send_response(200)
+    self.end_headers()
+    return
+  
   def do_GET(self):
     aPath = self.path.split("/")
     aDirs = []    
 
     jsonOut = {}
 
-    if len(aPath) > 3 and aPath[2] == "route":
+    startLocation = 2 if aPath[2] != "" else 3
+
+    if len(aPath) > startLocation + 1 and aPath[startLocation] == "route":
       cameras = []
       dcameras = []
       ecameras = []
+      segment_numbers = []
       logs = []
       qcameras = []
       qlogs = []
-      aRoute = aPath[3].split("%7C")
+      aRoute = aPath[startLocation+1].split("%7C")
       dID = aRoute[0]
       route = aRoute[1]
       subFolders = os.walk(recordingsPath + "/" + route)
       for root, dirs, files in subFolders:
-         for dir in dirs:
+        for dir in dirs:
             if dir.startswith(route + "--"):
               aDirs.append(os.path.join(root, dir))
       if len(aDirs) > 0:
@@ -43,19 +51,21 @@ class Handler(BaseHTTPRequestHandler):
         for dir in aDirs:
           subFolders = os.walk(dir)          
           pos = dir.split("--")
+          segment_numbers.append(int(pos[-1]))
           for root, dirs, files in subFolders:
             for file in files:
-               if file in LOGS:
+              if file in LOGS:
                   logs.append(f"http://localhost:{serverPort}/qlog/{dID}/{route}/{pos[-1]}/{file}")
-               if file in QCAMERAS:
+              if file in QCAMERAS:
                   qcameras.append(f"http://localhost:{serverPort}/qlog/{dID}/{route}/{pos[-1]}/{file}")
-               if file in QLOGS:
-                  qlogs.append(f"http://localhost:{serverPort}/qlog/{dID}/{route}/{pos[-1]}/{file}")
-
-        jsonOut['logs'] = logs
-        jsonOut['qcameras'] = qcameras
-        jsonOut['qlogs'] = qlogs
-
+              if file in QLOGS:
+                  qlogs.append(f"http://localhost:{serverPort}/qlog/{dID}/{route}/{pos[-1]}/{file}")              
+        if len(aPath) > startLocation + 2 and aPath[startLocation+2] == "files":
+          jsonOut['logs'] = logs
+          jsonOut['qcameras'] = qcameras
+          jsonOut['qlogs'] = qlogs
+        else:
+          jsonOut['segment_numbers'] = segment_numbers
         
       self.send_response(200)
       self.send_header("Content-type", "application/json")
